@@ -1,0 +1,44 @@
+name: Deploy LaporDesa ke AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v3
+
+    - name: Konfigurasi AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login ke Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build Docker Image & Push ke ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        # GANTI NAMA REPO DI BAWAH INI SESUAI NAMA ECR KAMU
+        ECR_REPOSITORY: lapordesa-app 
+        IMAGE_TAG: latest
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Force Update Amazon ECS
+      env:
+        # GANTI NAMA CLUSTER DAN SERVICE SESUAI YANG KAMU BIKIN DI AWS
+        CLUSTER_NAME: LaporDesa-Cluster
+        SERVICE_NAME: LaporDesa-Service
+      run: |
+        aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment

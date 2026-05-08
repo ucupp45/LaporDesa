@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LaporDesa - Sistem Pengaduan Masyarakat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">LaporDesa 📢</h2>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-success">{{ messages[0] }}</div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- Form Laporan -->
+            <div class="col-md-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">Buat Laporan Baru</div>
+                    <div class="card-body">
+                        <form action="/submit" method="POST" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label>Judul Laporan</label>
+                                <input type="text" name="judul" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label>Deskripsi Kejadian</label>
+                                <textarea name="deskripsi" class="form-control" rows="3" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label>Lokasi (RT/RW/Jalan)</label>
+                                <input type="text" name="lokasi" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label>Upload Foto Bukti (Masuk ke S3)</label>
+                                <input type="file" name="foto" class="form-control" accept="image/*" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Kirim Laporan</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Laporan -->
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">Daftar Laporan Masyarakat</div>
+                    <div class="card-body">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Foto Bukti</th>
+                                    <th>Detail Laporan</th>
+                                    <th>Status</th>
+                                    <th>Aksi Admin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in laporan_list %}
+                                <tr>
+                                    <td>
+                                        <!-- Mengakses gambar melalui CloudFront -->
+                                        <img src="{{ cloudfront_url }}/{{ row.foto_url }}" alt="Bukti" width="100"
+                                            class="img-thumbnail">
+                                    </td>
+                                    <td>
+                                        <strong>{{ row.judul }}</strong><br>
+                                        <small>{{ row.deskripsi }}</small><br>
+                                        <span class="badge bg-secondary">{{ row.lokasi }}</span>
+                                    </td>
+                                    <td>
+                                        {% if row.status == 'Menunggu' %} <span class="badge bg-warning text-dark">{{
+                                            row.status }}</span>
+                                        {% elif row.status == 'Diproses' %} <span class="badge bg-info">{{ row.status
+                                            }}</span>
+                                        {% else %} <span class="badge bg-success">{{ row.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form action="/update_status/{{ row.id }}" method="POST" class="d-flex">
+                                            <select name="status" class="form-select form-select-sm me-2">
+                                                <option value="Menunggu">Menunggu</option>
+                                                <option value="Diproses">Diproses</option>
+                                                <option value="Selesai">Selesai</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-success">Update</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
